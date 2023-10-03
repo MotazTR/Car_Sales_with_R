@@ -1,0 +1,145 @@
+---
+title: "Projet"
+author: "TRABELSI Motaz"
+         
+date: "20/05/2023"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r }
+Car_sales <- read.csv("C:/Users/trabe/Downloads/Car_sales.")
+
+
+```
+
+#Importation et clean-up du data
+
+```{r cars}
+
+View(Car_sales)
+rownames(Car_sales) <- make.names(Car_sales[,2], unique = TRUE)
+Car_sales$Model <- NULL
+Car_sales$Latest_Launch <- NULL
+View(Car_sales)
+
+Car_sales$Price_in_thousands[is.na(Car_sales$Price_in_thousands)] <- mean(Car_sales$Price_in_thousands, na.rm=TRUE)
+View(Car_sales)
+
+```
+
+#PCA
+
+```{r}
+library(FactoMineR)
+
+res.pca=PCA(Car_sales[,2:9], scale.unit=TRUE, ncp=2, graph=T)
+
+res<-PCA(Car_sales ,quali.sup=1) 
+plot.PCA(res,choix="var")
+
+plot(res,choix="ind", habillage=1)
+
+library(factoextra)
+dimdesc(res)
+res$var$cor[,1]
+cor(Car_sales[,2 :9])
+
+library(Factoshiny)
+res<-Factoshiny(Car_sales)
+```
+
+#CAH
+
+```{r}
+Car_sales<- subset(Car_sales, select = -c(X, X.1,X.2))
+```
+
+```{r}
+library(FactoMineR)
+
+x=Car_sales[,2 :9]
+d=dist(scale(x),  method = "euclidian")
+d
+
+v=hclust(d, method="ward.D")
+hclust(d,method="ward.D")
+
+library(clValid)
+x=as.data.frame(x)
+View(x)
+
+intern<-clValid(x,2:6,clmethods= c("hierarchical"), validation="internal")
+summary(intern)
+#k=2
+
+hc1=hclust(d, method = "ward.D") #methode d'aggregation or completre or average 
+plot(hc1, hang = -1)
+
+classes<-cutree(hc1, k=2)
+classes
+table(classes) 
+
+View(Car_sales)
+
+plot(hc1, hang= -1)
+rect.hclust(hc1, k=2 , border="red")
+
+Car_sales<-cbind.data.frame(Car_sales, classes)
+# Ajout d'une colonne qui contient les classes.
+
+colnames(Car_sales)[10]<- "class.cah" #ajouter col classe.kmeans
+
+
+View(Car_sales)
+```
+
+#Kmeans
+
+```{r}
+library(zoo)
+x <- na.aggregate(x)
+x <- scale(x)
+class.km <- kmeans(x, centers = 2, iter.max = 1000)
+
+class.km$cluster 
+class.km$size 
+class.km$centers 
+
+View(class.km)
+
+if (nrow(Car_sales) == length(class.km$cluster)) {
+  # Ajoutez la colonne des clusters à Car_sales
+  Car_sales$class.km.cluster <- as.factor(class.km$cluster)
+} else {
+  # Traitez l'incompatibilité des lignes
+  print("Les deux objets n'ont pas le même nombre de lignes.")
+}
+View(Car_sales)
+
+if (ncol(Car_sales) >= 11) {
+  colnames(Car_sales)[11] <- "class.kmeans"
+} else {
+  # Traitez l'incompatibilité des colonnes
+  print("Le data frame n'a pas suffisamment de colonnes pour attribuer un nom à la 11e colonne.")
+}
+
+# Affichez votre data frame
+View(Car_sales)
+
+
+
+
+
+
+View(Car_sales[,c(1,2,5,6)]) 
+Car_sales <- na.omit(Car_sales)
+Car_sales[is.na(Car_sales)] <- mean(Car_sales, na.rm = TRUE)
+
+kc <- kmeans(Car_sales[, c(2, 3, 4)], centers = 2, iter.max = 1000)
+kc$size#effectif de chaque class
+kc$cluster
+plot(Car_sales[,c(2,3,4)])
+```
